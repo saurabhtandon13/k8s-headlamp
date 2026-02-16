@@ -1,0 +1,38 @@
+{{- if and .Values.ingress.enabled .Values.certManager.enabled .Values.ingress.tls }}
+
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: headlamp-issuer
+  namespace: {{ include "headlamp.namespace" . }}
+spec:
+  selfSigned: {}
+
+{{- end }}
+---
+{{- if and .Values.ingress.enabled .Values.certManager.enabled .Values.ingress.tls }}
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: headlamp-cert
+  namespace: {{ include "headlamp.namespace" . }}
+spec:
+  isCA: true
+  commonName: {{ (index (index .Values.ingress.tls 0).hosts 0) }}
+  secretName: {{ (index .Values.ingress.tls 0).secretName }}
+  dnsNames:
+    {{- range (index .Values.ingress.tls 0).hosts }}
+    - {{ . }}
+    {{- end }}
+  duration: 8760h
+  renewBefore: 240h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: headlamp-issuer
+    kind: Issuer
+    group: cert-manager.io
+
+{{- end }}
